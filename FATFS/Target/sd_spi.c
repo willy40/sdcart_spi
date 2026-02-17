@@ -44,8 +44,37 @@ static uint8_t sdhc = 0;
 volatile int dma_tx_done = 0;
 volatile int dma_rx_done = 0;
 
-/* Pre-initialized DMA dummy buffer - filled with 0xFF at compile time */
-static const uint8_t tx_dummy_512[512] = {[0 ... 511] = 0xFF};
+/* DMA buffer placed in special RAM section for optimal DMA performance
+ * Aligned to 32 bytes for cache coherency on ARM Cortex-M processors
+ * Note: This buffer MUST be initialized at runtime since it's in NOLOAD section */
+static uint8_t tx_dummy_512[512] __attribute__((section(".dma_buffer"), aligned(32)));
+
+/* Flag to track if DMA buffer has been initialized */
+static volatile uint8_t dma_buffer_initialized = 0;
+
+/* Initialize DMA buffer with 0xFF values */
+static void SD_InitDmaBuffer(void) {
+    if (!dma_buffer_initialized) {
+        memset((void *)tx_dummy_512, 0xFF, sizeof(tx_dummy_512));
+        dma_buffer_initialized = 1;
+    }
+}
+
+/* Reset SPI and DMA peripherals after error to recover from hung state */
+static void SD_ResetSpiDma(void) {
+    /* Abort any ongoing DMA transfers */
+    HAL_SPI_DMAStop(&SD_SPI_HANDLE);
+
+    /* Reset DMA flags */
+    dma_tx_done = 0;
+    dma_rx_done = 0;
+
+    /* Abort any ongoing SPI operations */
+    HAL_SPI_Abort(&SD_SPI_HANDLE);
+
+    /* Small delay to ensure hardware is stable */
+    HAL_Delay(1);
+}
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
     if (hspi == &SD_SPI_HANDLE) dma_tx_done = 1;
@@ -53,6 +82,14 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
     if (hspi == &SD_SPI_HANDLE) dma_rx_done = 1;
+}
+
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
+    if (hspi == &SD_SPI_HANDLE) {
+        /* Set done flags to unblock waiting loops */
+        dma_tx_done = 1;
+        dma_rx_done = 1;
+    }
 }
 #endif
 
@@ -70,9 +107,24 @@ static uint8_t SD_TransmitBuffer(const uint8_t *buffer, uint16_t len) {
     HAL_StatusTypeDef res = HAL_ERROR;
 
 #if USE_DMA
+    uint32_t timeout = HAL_GetTick() + 1000; /* 1 second timeout */
     dma_tx_done = 0;
     res = HAL_SPI_Transmit_DMA(&SD_SPI_HANDLE, (uint8_t *)buffer, len);
-    while (!dma_tx_done);
+    if (res != HAL_OK) {
+        SD_ResetSpiDma();
+        return 1;
+    }
+    while (!dma_tx_done) {
+        if (HAL_GetTick() > timeout) {
+            SD_ResetSpiDma();
+            return 1;
+        }
+    }
+    /* Check for SPI errors */
+    if (SD_SPI_HANDLE.ErrorCode != HAL_SPI_ERROR_NONE) {
+        SD_ResetSpiDma();
+        return 1;
+    }
 #else
     res = HAL_SPI_Transmit(&SD_SPI_HANDLE, (uint8_t *)buffer, len, HAL_MAX_DELAY);
 #endif
@@ -82,9 +134,25 @@ static uint8_t SD_TransmitBuffer(const uint8_t *buffer, uint16_t len) {
 static uint8_t SD_ReceiveBuffer(uint8_t *buffer, uint16_t len) {
     HAL_StatusTypeDef res = HAL_OK;
 #if USE_DMA
+    uint32_t timeout = HAL_GetTick() + 1000; /* 1 second timeout */
+    SD_InitDmaBuffer(); /* Ensure DMA buffer is initialized */
     dma_rx_done = 0;
     res = HAL_SPI_TransmitReceive_DMA(&SD_SPI_HANDLE, (uint8_t *)tx_dummy_512, buffer, len);
-    while (!dma_rx_done);
+    if (res != HAL_OK) {
+        SD_ResetSpiDma();
+        return 1;
+    }
+    while (!dma_rx_done) {
+        if (HAL_GetTick() > timeout) {
+            SD_ResetSpiDma();
+            return 1;
+        }
+    }
+    /* Check for SPI errors */
+    if (SD_SPI_HANDLE.ErrorCode != HAL_SPI_ERROR_NONE) {
+        SD_ResetSpiDma();
+        return 1;
+    }
 #else
     for (uint16_t i = 0; i < len; i++) {
         buffer[i] = SD_ReceiveByte();
