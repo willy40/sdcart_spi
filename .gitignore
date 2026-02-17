@@ -106,3 +106,6 @@ release
 
 # debug information files
 *.dwo
+
+# CodeQL artifacts
+_codeql_detected_source_root

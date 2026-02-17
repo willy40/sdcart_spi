@@ -36,20 +36,23 @@ extern SPI_HandleTypeDef hspi1;
  * 🚫 DO NOT MODIFY BELOW THIS LINE
  * Auto-generated/system-managed code. Changes may be lost.
  ***************************************************************/
-static volatile DSTATUS Stat = STA_NOINIT;	/* Physical drive status */
-BYTE CardType;								/* Card type flags */
+static volatile DSTATUS Stat = STA_NOINIT;  /* Physical drive status */
+BYTE CardType;                              /* Card type flags */
 static uint8_t sdhc = 0;
 
 #if USE_DMA
 volatile int dma_tx_done = 0;
 volatile int dma_rx_done = 0;
 
+/* Pre-initialized DMA dummy buffer - filled with 0xFF at compile time */
+static const uint8_t tx_dummy_512[512] = {[0 ... 511] = 0xFF};
+
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
-	if (hspi == &SD_SPI_HANDLE) dma_tx_done = 1;
+    if (hspi == &SD_SPI_HANDLE) dma_tx_done = 1;
 }
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
-	if (hspi == &hspi1) dma_rx_done = 1;
+    if (hspi == &SD_SPI_HANDLE) dma_rx_done = 1;
 }
 #endif
 
@@ -64,7 +67,7 @@ static uint8_t SD_ReceiveByte(void) {
 }
 
 static uint8_t SD_TransmitBuffer(const uint8_t *buffer, uint16_t len) {
-	HAL_StatusTypeDef res = HAL_ERROR;
+    HAL_StatusTypeDef res = HAL_ERROR;
 
 #if USE_DMA
     dma_tx_done = 0;
@@ -73,23 +76,21 @@ static uint8_t SD_TransmitBuffer(const uint8_t *buffer, uint16_t len) {
 #else
     res = HAL_SPI_Transmit(&SD_SPI_HANDLE, (uint8_t *)buffer, len, HAL_MAX_DELAY);
 #endif
-    return res != HAL_OK ? 1:0;
+    return res != HAL_OK ? 1 : 0;
 }
 
 static uint8_t SD_ReceiveBuffer(uint8_t *buffer, uint16_t len) {
-	HAL_StatusTypeDef res = HAL_OK;
+    HAL_StatusTypeDef res = HAL_OK;
 #if USE_DMA
-	static uint8_t tx_dummy[512];
-    for (int i = 0; i < len; i++) tx_dummy[i] = 0xFF;  // Fill with 0xFF
     dma_rx_done = 0;
-    res = HAL_SPI_TransmitReceive_DMA(&hspi1, tx_dummy, buffer, len);
+    res = HAL_SPI_TransmitReceive_DMA(&SD_SPI_HANDLE, (uint8_t *)tx_dummy_512, buffer, len);
     while (!dma_rx_done);
 #else
     for (uint16_t i = 0; i < len; i++) {
         buffer[i] = SD_ReceiveByte();
     }
 #endif
-    return res != HAL_OK ? 1:0;
+    return res != HAL_OK ? 1 : 0;
 }
 
 static DRESULT SD_WaitReady(uint32_t delay) {
@@ -104,14 +105,19 @@ static DRESULT SD_WaitReady(uint32_t delay) {
 
 static uint8_t SD_SendCommand(uint8_t cmd, uint32_t arg, uint8_t crc) {
     uint8_t response, retry = 0xFF;
+    uint8_t cmd_buf[6];
 
     SD_WaitReady(500);
-    SD_TransmitByte(0x40 | cmd);
-    SD_TransmitByte(arg >> 24);
-    SD_TransmitByte(arg >> 16);
-    SD_TransmitByte(arg >> 8);
-    SD_TransmitByte(arg);
-    SD_TransmitByte(crc);
+
+    /* Build command packet in buffer for single transfer */
+    cmd_buf[0] = 0x40 | cmd;
+    cmd_buf[1] = (uint8_t)(arg >> 24);
+    cmd_buf[2] = (uint8_t)(arg >> 16);
+    cmd_buf[3] = (uint8_t)(arg >> 8);
+    cmd_buf[4] = (uint8_t)arg;
+    cmd_buf[5] = crc;
+
+    HAL_SPI_Transmit(&SD_SPI_HANDLE, cmd_buf, 6, HAL_MAX_DELAY);
 
     do {
         response = SD_ReceiveByte();
@@ -172,7 +178,7 @@ DRESULT SD_SPI_Init(BYTE pdrv) {
 
     FCLK_FAST();
 
-    Stat &= ~STA_NOINIT;	/* Clear STA_NOINIT flag */
+    Stat &= ~STA_NOINIT;    /* Clear STA_NOINIT flag */
     return RES_OK;
 }
 
@@ -439,146 +445,7 @@ DRESULT SD_ioctl(BYTE drv, BYTE cmd, void *buff)
 
 inline DSTATUS SD_status (BYTE drv)
 {
-	if (drv) return STA_NOINIT;		/* Supports only drive 0 */
+    if (drv) return STA_NOINIT;     /* Supports only drive 0 */
 
-	return Stat;	/* Return disk status */
+    return Stat;    /* Return disk status */
 }
-
-//SD_Status SD_ReadBlocks(uint8_t *buff, uint32_t sector, uint32_t count) {
-//    if (!count) return RES_ERROR;
-//
-//    if (count == 1) {
-//    	if (!sdhc) sector *= 512;
-//        SD_CS_LOW();
-//        if (SD_SendCommand(CMD17, sector, 0xFF) != 0x00) {
-//            SD_CS_HIGH();
-//            return RES_ERROR;
-//        }
-//
-//        uint8_t token;
-//        uint32_t timeout = HAL_GetTick() + 200;
-//        do {
-//            token = SD_ReceiveByte();
-//            if (token == 0xFE) break;
-//        } while (HAL_GetTick() < timeout);
-//        if (token != 0xFE) {
-//            SD_CS_HIGH();
-//            return RES_ERROR;
-//        }
-//
-//        SD_ReceiveBuffer(buff, 512);
-//        SD_ReceiveByte();  // CRC
-//        SD_ReceiveByte();
-//        SD_CS_HIGH();
-//        SD_TransmitByte(0xFF);
-//        return RES_OK;
-//    } else {
-//        return SD_ReadMultiBlocks(buff, sector, count);
-//    }
-//}
-//
-//SD_Status SD_ReadMultiBlocks(uint8_t *buff, uint32_t sector, uint32_t count) {
-//    if (!count) return RES_ERROR;
-//    if (!sdhc) sector *= 512;
-//
-//    SD_CS_LOW();
-//    if (SD_SendCommand(18, sector, 0xFF) != 0x00) {
-//        SD_CS_HIGH();
-//        return RES_ERROR;
-//    }
-//
-//    while (count--) {
-//        uint8_t token;
-//        uint32_t timeout = HAL_GetTick() + 200;
-//
-//        do {
-//            token = SD_ReceiveByte();
-//            if (token == 0xFE) break;
-//        } while (HAL_GetTick() < timeout);
-//
-//        if (token != 0xFE) {
-//            SD_CS_HIGH();
-//            return RES_ERROR;
-//        }
-//
-//        SD_ReceiveBuffer(buff, 512);
-//        SD_ReceiveByte();  // discard CRC
-//        SD_ReceiveByte();
-//
-//        buff += 512;
-//    }
-//
-//    SD_SendCommand(12, 0, 0xFF);  // STOP_TRANSMISSION
-//    SD_CS_HIGH();
-//    SD_TransmitByte(0xFF); // Extra 8 clocks
-//
-//    return RES_OK;
-//}
-
-//SD_Status SD_WriteBlocks(const uint8_t *buff, uint32_t sector, uint32_t count) {
-//    if (!count) return RES_ERROR;
-//
-//    if (count == 1) {
-//    	if (!sdhc) sector *= 512;
-//        SD_CS_LOW();
-//        if (SD_SendCommand(CMD24, sector, 0xFF) != 0x00) {
-//            SD_CS_HIGH();
-//            return RES_ERROR;
-//        }
-//
-//        SD_TransmitByte(0xFE);
-//        SD_TransmitBuffer(buff, 512);
-//        SD_TransmitByte(0xFF);
-//        SD_TransmitByte(0xFF);
-//
-//        uint8_t resp = SD_ReceiveByte();
-//        if ((resp & 0x1F) != 0x05) {
-//            SD_CS_HIGH();
-//            return RES_ERROR;
-//        }
-//
-//        while (SD_ReceiveByte() == 0);
-//        SD_CS_HIGH();
-//        SD_TransmitByte(0xFF);
-//
-//        return RES_OK;
-//    } else {
-//        return SD_WriteMultiBlocks(buff, sector, count);
-//    }
-//}
-//
-//SD_Status SD_WriteMultiBlocks(const uint8_t *buff, uint32_t sector, uint32_t count) {
-//    if (!count) return RES_ERROR;
-//    if (!sdhc) sector *= 512;
-//
-//    SD_CS_LOW();
-//    if (SD_SendCommand(25, sector, 0xFF) != 0x00) {
-//        SD_CS_HIGH();
-//        return RES_ERROR;
-//    }
-//
-//    while (count--) {
-//        SD_TransmitByte(0xFC);  // Start multi-block write token
-//
-//        SD_TransmitBuffer((uint8_t *)buff, 512);
-//        SD_TransmitByte(0xFF);  // dummy CRC
-//        SD_TransmitByte(0xFF);
-//
-//        uint8_t resp = SD_ReceiveByte();
-//        if ((resp & 0x1F) != 0x05) {
-//            SD_CS_HIGH();
-//            return RES_ERROR;
-//        }
-//
-//        while (SD_ReceiveByte() == 0);  // busy wait
-//        buff += 512;
-//    }
-//
-//    SD_TransmitByte(0xFD);  // STOP_TRAN token
-//    while (SD_ReceiveByte() == 0);  // busy wait
-//
-//    SD_CS_HIGH();
-//    SD_TransmitByte(0xFF);
-//
-//    return RES_OK;
-//}
