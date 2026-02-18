@@ -40,6 +40,13 @@ DSTATUS disk_status (
   DSTATUS stat;
 
   stat = disk.drv[pdrv]->disk_status(disk.lun[pdrv]);
+
+  /* If the driver reports that the disk is not initialized (e.g., card removed),
+   * clear the is_initialized flag so that the next mount will properly reinitialize */
+  if (stat & STA_NOINIT) {
+    disk.is_initialized[pdrv] = 0;
+  }
+
   return stat;
 }
 
