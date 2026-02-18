@@ -3246,6 +3246,8 @@ static FRESULT find_volume (    /* FR_OK(0): successful, !=0: an error occurred 
             }
             return FR_OK;               /* The filesystem object is valid */
         }
+        /* Disk is not initialized - clear the filesystem object */
+        fs->fs_type = 0;
     }
 
     /* The filesystem object is not valid. */
