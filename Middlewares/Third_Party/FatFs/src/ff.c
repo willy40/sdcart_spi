@@ -3466,6 +3466,7 @@ static FRESULT validate (   /* Returns FR_OK or FR_INVALID_OBJECT */
             if (!(disk_status(obj->fs->pdrv) & STA_NOINIT)) { /* Test if the phsical drive is kept initialized */
                 res = FR_OK;
             } else {
+                obj->fs->fs_type = 0;   /* Disk is not initialized - clear the filesystem object */
                 unlock_fs(obj->fs, FR_OK);
             }
         } else {
@@ -3474,6 +3475,8 @@ static FRESULT validate (   /* Returns FR_OK or FR_INVALID_OBJECT */
 #else
         if (!(disk_status(obj->fs->pdrv) & STA_NOINIT)) { /* Test if the phsical drive is kept initialized */
             res = FR_OK;
+        } else {
+            obj->fs->fs_type = 0;   /* Disk is not initialized - clear the filesystem object */
         }
 #endif
     }
