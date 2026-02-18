@@ -72,6 +72,9 @@ static void SD_ResetSpiDma(void) {
     /* Abort any ongoing SPI operations */
     HAL_SPI_Abort(&SD_SPI_HANDLE);
 
+    /* Mark card as not initialized - requires re-initialization after error */
+    Stat = STA_NOINIT;
+
     /* Small delay to ensure hardware is stable */
     HAL_Delay(1);
 }
@@ -198,6 +201,10 @@ DRESULT SD_SPI_Init(BYTE pdrv) {
     uint8_t i, response;
     uint8_t r7[4];
     uint32_t retry;
+
+    /* Reset status to STA_NOINIT at start of init to ensure fresh state
+     * This allows re-initialization after card removal or errors */
+    Stat = STA_NOINIT;
 
     SD_CS_HIGH();
     for (i = 0; i < 10; i++) SD_TransmitByte(0xFF);
