@@ -110,4 +110,8 @@ void sd_benchmark(void) {
 
         f_mount(NULL, "", 0);
     }
+    else
+    {
+    	printf("Cart Error...\r\n");
+    }
 }

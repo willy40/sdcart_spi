@@ -47,7 +47,7 @@ DSTATUS disk_status (
     disk.is_initialized[pdrv] = 0;
   }
 
-  return stat;
+  return stat ;
 }
 
 /**

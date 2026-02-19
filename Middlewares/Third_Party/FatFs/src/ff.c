@@ -3246,8 +3246,6 @@ static FRESULT find_volume (    /* FR_OK(0): successful, !=0: an error occurred 
             }
             return FR_OK;               /* The filesystem object is valid */
         }
-        /* Disk is not initialized - clear the filesystem object */
-        fs->fs_type = 0;
     }
 
     /* The filesystem object is not valid. */
@@ -3466,7 +3464,6 @@ static FRESULT validate (   /* Returns FR_OK or FR_INVALID_OBJECT */
             if (!(disk_status(obj->fs->pdrv) & STA_NOINIT)) { /* Test if the phsical drive is kept initialized */
                 res = FR_OK;
             } else {
-                obj->fs->fs_type = 0;   /* Disk is not initialized - clear the filesystem object */
                 unlock_fs(obj->fs, FR_OK);
             }
         } else {
@@ -3475,8 +3472,6 @@ static FRESULT validate (   /* Returns FR_OK or FR_INVALID_OBJECT */
 #else
         if (!(disk_status(obj->fs->pdrv) & STA_NOINIT)) { /* Test if the phsical drive is kept initialized */
             res = FR_OK;
-        } else {
-            obj->fs->fs_type = 0;   /* Disk is not initialized - clear the filesystem object */
         }
 #endif
     }
@@ -3524,6 +3519,9 @@ FRESULT f_mount (
         if (!ff_del_syncobj(cfs->sobj)) return FR_INT_ERR;
 #endif
         cfs->fs_type = 0;               /* Clear old fs object */
+        DSTATUS stat = disk_status(fs->pdrv);
+        if(stat == RES_NOTRDY)
+        	disk_initialize(fs->pdrv);
     }
 
     if (fs) {

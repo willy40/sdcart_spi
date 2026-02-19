@@ -130,7 +130,7 @@ int main(void)
   while (1)
   {
 	  sd_benchmark();
-	  HAL_Delay(10000);
+	  HAL_Delay(2000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
