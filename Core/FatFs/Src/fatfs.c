@@ -17,7 +17,6 @@
   */
 /* USER CODE END Header */
 #include "fatfs.h"
-#include "ff.h"
 
 uint8_t retUSER;    /* Return value for USER */
 char USERPath[4] = "0:/";   /* USER logical drive path */

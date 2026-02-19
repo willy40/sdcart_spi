@@ -1,5 +1,5 @@
 /*-----------------------------------------------------------------------*/
-/* Low level disk I/O module for FatFs     (C)ChaN, 2017                */
+/* Low level disk I/O module for FatFs     (C)ChaN, 2019                */
 /*                                                                       */
 /*   Portions COPYRIGHT 2017 STMicroelectronics                          */
 /*   Portions Copyright (C) 2017, ChaN, all right reserved               */
@@ -8,20 +8,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "diskio.h"
-
-/* Forward declarations of SD card functions */
-extern DRESULT SD_SPI_Init(BYTE pdrv);
-extern DSTATUS SD_status(BYTE pdrv);
-extern DRESULT SD_ReadBlocks(BYTE pdrv, BYTE *buff, DWORD sector, UINT count);
-extern DRESULT SD_WriteBlocks(BYTE pdrv, const BYTE *buff, DWORD sector,
-		UINT count);
-extern DRESULT SD_ioctl(BYTE pdrv, BYTE cmd, void *buff);
-
-#if defined ( __GNUC__ )
-#ifndef __weak
-#define __weak __attribute__((weak))
-#endif
-#endif
+#include "sd_spi.h"
 
 /* Private variables ---------------------------------------------------------*/
 /* Note: This is a single-threaded embedded system design with single SD card.
@@ -71,7 +58,7 @@ DSTATUS disk_initialize(BYTE pdrv /* Physical drive nmuber to identify the drive
  */
 DRESULT disk_read(BYTE pdrv, /* Physical drive nmuber to identify the drive */
 BYTE *buff, /* Data buffer to store read data */
-DWORD sector, /* Sector address in LBA */
+LBA_t sector, /* Sector address in LBA */
 UINT count /* Number of sectors to read */
 ) {
 	return SD_ReadBlocks(pdrv, buff, sector, count);
@@ -85,15 +72,13 @@ UINT count /* Number of sectors to read */
  * @param  count: Number of sectors to write (1..128)
  * @retval DRESULT: Operation result
  */
-#if _USE_WRITE == 1
 DRESULT disk_write(BYTE pdrv, /* Physical drive nmuber to identify the drive */
 const BYTE *buff, /* Data to be written */
-DWORD sector, /* Sector address in LBA */
+LBA_t sector, /* Sector address in LBA */
 UINT count /* Number of sectors to write */
 ) {
 	return SD_WriteBlocks(pdrv, buff, sector, count);
 }
-#endif /* _USE_WRITE == 1 */
 
 /**
  * @brief  I/O control operation
@@ -102,23 +87,9 @@ UINT count /* Number of sectors to write */
  * @param  *buff: Buffer to send/receive control data
  * @retval DRESULT: Operation result
  */
-#if _USE_IOCTL == 1
 DRESULT disk_ioctl(BYTE pdrv, /* Physical drive nmuber (0..) */
 BYTE cmd, /* Control code */
 void *buff /* Buffer to send/receive control data */
 ) {
 	return SD_ioctl(pdrv, cmd, buff);
 }
-#endif /* _USE_IOCTL == 1 */
-
-/**
- * @brief  Gets Time from RTC
- * @param  None
- * @retval Time in DWORD
- */
-__weak DWORD get_fattime(void) {
-	return 0;
-}
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
-

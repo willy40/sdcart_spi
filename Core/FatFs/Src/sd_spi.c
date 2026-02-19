@@ -17,7 +17,6 @@
 #include "main.h"
 #include <string.h>
 #include <stdio.h>
-#include "diskio.h"
 
 /***************************************************************
  * 🔧 USER-MODIFIABLE SECTION
@@ -273,7 +272,7 @@ DRESULT SD_SPI_Init(BYTE pdrv) {
 	return RES_OK;
 }
 
-DRESULT SD_WriteBlocks(BYTE pdrv, const BYTE *buff, DWORD sector, UINT count) {
+DRESULT SD_WriteBlocks(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count) {
 	if (!count)
 		return RES_ERROR;
 	if (Stat)
@@ -341,7 +340,7 @@ DRESULT SD_WriteBlocks(BYTE pdrv, const BYTE *buff, DWORD sector, UINT count) {
 	return RES_OK;
 }
 
-DRESULT SD_ReadBlocks(BYTE pdrv, BYTE *buff, DWORD sector, UINT count) {
+DRESULT SD_ReadBlocks(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
 	if (!count)
 		return RES_ERROR;
 	if (Stat)
