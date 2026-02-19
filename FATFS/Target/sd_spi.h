@@ -25,6 +25,7 @@
 #define CMD8  	(8)
 #define CMD9	(9)			/* SEND_CSD */
 #define CMD12	(12)		/* STOP_TRANSMISSION */
+#define CMD13	(13)		/* STSTUS */
 #define CMD17 	(17)
 #define CMD18	(18)		/* READ_MULTIPLE_BLOCK */
 #define CMD24 	(24)
