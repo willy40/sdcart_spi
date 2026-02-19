@@ -271,8 +271,7 @@ DRESULT SD_SPI_Init(BYTE pdrv) {
 	return RES_OK;
 }
 
-DRESULT SD_WriteBlocks(BYTE pdrv, const uint8_t *buff, uint32_t sector,
-		uint32_t count) {
+DRESULT SD_WriteBlocks(BYTE pdrv, const BYTE *buff, DWORD sector, UINT count) {
 	if (!count)
 		return RES_ERROR;
 	if (Stat)
@@ -340,7 +339,7 @@ DRESULT SD_WriteBlocks(BYTE pdrv, const uint8_t *buff, uint32_t sector,
 	return RES_OK;
 }
 
-DRESULT SD_ReadBlocks(BYTE pdrv, uint8_t *buff, uint32_t sector, uint32_t count) {
+DRESULT SD_ReadBlocks(BYTE pdrv, BYTE *buff, DWORD sector, UINT count) {
 	if (!count)
 		return RES_ERROR;
 	if (Stat)
