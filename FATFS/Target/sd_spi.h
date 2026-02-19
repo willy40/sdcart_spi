@@ -50,8 +50,8 @@
 #define CT_BLOCK	0x08		/* Block addressing */
 
 DRESULT SD_SPI_Init(BYTE pdrv);
-DRESULT SD_ReadBlocks(BYTE pdrv, uint8_t *buff, uint32_t sector, uint32_t count);
-DRESULT SD_WriteBlocks(BYTE pdrv, const uint8_t *buff, uint32_t sector, uint32_t count);
+DRESULT SD_ReadBlocks(BYTE pdrv, BYTE *buff, DWORD sector, UINT count);
+DRESULT SD_WriteBlocks(BYTE pdrv, const BYTE *buff, DWORD sector, UINT count);
 DRESULT SD_ioctl(BYTE drv, BYTE cmd, void *buff);
 DSTATUS SD_status (BYTE drv);
 
