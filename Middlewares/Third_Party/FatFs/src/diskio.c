@@ -11,10 +11,10 @@
 
 /* Forward declarations of SD card functions */
 extern DRESULT SD_SPI_Init(BYTE pdrv);
-extern DSTATUS SD_status(BYTE drv);
+extern DSTATUS SD_status(BYTE pdrv);
 extern DRESULT SD_ReadBlocks(BYTE pdrv, BYTE *buff, DWORD sector, UINT count);
 extern DRESULT SD_WriteBlocks(BYTE pdrv, const BYTE *buff, DWORD sector, UINT count);
-extern DRESULT SD_ioctl(BYTE drv, BYTE cmd, void *buff);
+extern DRESULT SD_ioctl(BYTE pdrv, BYTE cmd, void *buff);
 
 #if defined ( __GNUC__ )
 #ifndef __weak
@@ -23,6 +23,10 @@ extern DRESULT SD_ioctl(BYTE drv, BYTE cmd, void *buff);
 #endif
 
 /* Private variables ---------------------------------------------------------*/
+/* Note: This is a single-threaded embedded system design.
+ * The 'volatile' keyword ensures the compiler doesn't optimize away reads/writes,
+ * which is important for interrupt-driven or hardware-related code.
+ * Thread safety was not present in the original design and is not required here. */
 static volatile BYTE is_initialized = 0;
 
 /* Private functions ---------------------------------------------------------*/
