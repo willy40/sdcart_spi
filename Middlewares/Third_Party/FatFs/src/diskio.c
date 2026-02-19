@@ -23,11 +23,11 @@ extern DRESULT SD_ioctl(BYTE pdrv, BYTE cmd, void *buff);
 #endif
 
 /* Private variables ---------------------------------------------------------*/
-/* Note: This is a single-threaded embedded system design.
- * The 'volatile' keyword ensures the compiler doesn't optimize away reads/writes,
- * which is important for interrupt-driven or hardware-related code.
- * Thread safety was not present in the original design and is not required here. */
-static volatile BYTE is_initialized = 0;
+/* Note: This is a single-threaded embedded system design with single SD card.
+ * The is_initialized flag tracks initialization state and is only accessed from
+ * main thread context (not from ISRs). The SD card driver handles its own
+ * interrupt safety with volatile variables where needed. */
+static BYTE is_initialized = 0;
 
 /* Private functions ---------------------------------------------------------*/
 
