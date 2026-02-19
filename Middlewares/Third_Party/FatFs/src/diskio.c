@@ -1,18 +1,20 @@
 /*-----------------------------------------------------------------------*/
-/* Low level disk I/O module skeleton for FatFs     (C)ChaN, 2017        */
+/* Low level disk I/O module for FatFs     (C)ChaN, 2017                */
 /*                                                                       */
 /*   Portions COPYRIGHT 2017 STMicroelectronics                          */
 /*   Portions Copyright (C) 2017, ChaN, all right reserved               */
-/*-----------------------------------------------------------------------*/
-/* If a working storage control module is available, it should be        */
-/* attached to the FatFs via a glue function rather than modifying it.   */
-/* This is an example of glue functions to attach various existing      */
-/* storage control modules to the FatFs module with a defined API.       */
+/*   Modified to directly call SD card functions - proxy layer removed   */
 /*-----------------------------------------------------------------------*/
 
 /* Includes ------------------------------------------------------------------*/
 #include "diskio.h"
-#include "ff_gen_drv.h"
+
+/* Forward declarations of SD card functions */
+extern DRESULT SD_SPI_Init(BYTE pdrv);
+extern DSTATUS SD_status(BYTE drv);
+extern DRESULT SD_ReadBlocks(BYTE pdrv, BYTE *buff, DWORD sector, UINT count);
+extern DRESULT SD_WriteBlocks(BYTE pdrv, const BYTE *buff, DWORD sector, UINT count);
+extern DRESULT SD_ioctl(BYTE drv, BYTE cmd, void *buff);
 
 #if defined ( __GNUC__ )
 #ifndef __weak
@@ -20,12 +22,9 @@
 #endif
 #endif
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-extern Disk_drvTypeDef  disk;
+static volatile BYTE is_initialized = 0;
 
-/* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
 /**
@@ -39,15 +38,16 @@ DSTATUS disk_status (
 {
   DSTATUS stat;
 
-  stat = disk.drv[pdrv]->disk_status(disk.lun[pdrv]);
+  /* Directly call SD card status function */
+  stat = SD_status(pdrv);
 
   /* If the driver reports that the disk is not initialized (e.g., card removed),
    * clear the is_initialized flag so that the next mount will properly reinitialize */
   if (stat & STA_NOINIT) {
-    disk.is_initialized[pdrv] = 0;
+    is_initialized = 0;
   }
 
-  return stat ;
+  return stat;
 }
 
 /**
@@ -61,12 +61,13 @@ DSTATUS disk_initialize (
 {
   DSTATUS stat = RES_OK;
 
-  if(disk.is_initialized[pdrv] == 0)
+  if(is_initialized == 0)
   {
-    stat = disk.drv[pdrv]->disk_initialize(disk.lun[pdrv]);
+    /* Directly call SD card initialization function */
+    stat = SD_SPI_Init(pdrv);
     if(stat == RES_OK)
     {
-      disk.is_initialized[pdrv] = 1;
+      is_initialized = 1;
     }
   }
   return stat;
@@ -87,10 +88,8 @@ DRESULT disk_read (
 	UINT count		/* Number of sectors to read */
 )
 {
-  DRESULT res;
-
-  res = disk.drv[pdrv]->disk_read(disk.lun[pdrv], buff, sector, count);
-  return res;
+  /* Directly call SD card read function */
+  return SD_ReadBlocks(pdrv, buff, sector, count);
 }
 
 /**
@@ -109,10 +108,8 @@ DRESULT disk_write (
 	UINT count        	/* Number of sectors to write */
 )
 {
-  DRESULT res;
-
-  res = disk.drv[pdrv]->disk_write(disk.lun[pdrv], buff, sector, count);
-  return res;
+  /* Directly call SD card write function */
+  return SD_WriteBlocks(pdrv, buff, sector, count);
 }
 #endif /* _USE_WRITE == 1 */
 
@@ -130,10 +127,8 @@ DRESULT disk_ioctl (
 	void *buff		/* Buffer to send/receive control data */
 )
 {
-  DRESULT res;
-
-  res = disk.drv[pdrv]->disk_ioctl(disk.lun[pdrv], cmd, buff);
-  return res;
+  /* Directly call SD card ioctl function */
+  return SD_ioctl(pdrv, cmd, buff);
 }
 #endif /* _USE_IOCTL == 1 */
 

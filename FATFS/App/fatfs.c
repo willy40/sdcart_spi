@@ -20,7 +20,7 @@
 #include "ff.h"
 
 uint8_t retUSER;    /* Return value for USER */
-char USERPath[4];   /* USER logical drive path */
+char USERPath[4] = "0:/";   /* USER logical drive path */
 FATFS USERFatFS;    /* File system object for USER logical drive */
 FIL USERFile;       /* File object for USER */
 
@@ -41,8 +41,8 @@ PARTITION VolToPart[1];
 
 void MX_FATFS_Init(void)
 {
-  /*## FatFS: Link the USER driver ###########################*/
-  retUSER = FATFS_LinkDriver(&USER_Driver, USERPath);
+  /* Driver linking no longer needed - diskio.c directly calls SD functions */
+  retUSER = 0; /* Success */
 
   /* USER CODE BEGIN Init */
   /* additional user code for init */

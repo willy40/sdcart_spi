@@ -18,7 +18,6 @@
 #include <string.h>
 #include <stdio.h>
 #include "diskio.h"
-#include "ff_gen_drv.h"
 
 /***************************************************************
  * 🔧 USER-MODIFIABLE SECTION
@@ -582,16 +581,3 @@ inline DSTATUS SD_status(BYTE drv) {
 
 	return res;
 }
-
-/* USER_Driver structure - directly exposes SD functions to FatFS */
-Diskio_drvTypeDef USER_Driver = {
-		SD_SPI_Init,
-		SD_status,
-		SD_ReadBlocks,
-#if _USE_WRITE == 1
-		SD_WriteBlocks,
-#endif
-#if _USE_IOCTL == 1
-		SD_ioctl,
-#endif
-		};
