@@ -3519,9 +3519,6 @@ FRESULT f_mount (
         if (!ff_del_syncobj(cfs->sobj)) return FR_INT_ERR;
 #endif
         cfs->fs_type = 0;               /* Clear old fs object */
-        DSTATUS stat = disk_status(fs->pdrv);
-        if(stat == RES_NOTRDY)
-        	disk_initialize(fs->pdrv);
     }
 
     if (fs) {
