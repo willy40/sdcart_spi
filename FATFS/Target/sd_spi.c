@@ -18,7 +18,6 @@
 #include <string.h>
 #include <stdio.h>
 #include "diskio.h"
-#include "ff_gen_drv.h"
 
 /***************************************************************
  * 🔧 USER-MODIFIABLE SECTION
@@ -61,23 +60,6 @@ static void SD_InitDmaBuffer(void) {
 	}
 }
 
-/* Reset SPI and DMA peripherals after error to recover from hung state */
-static void SD_ResetSpiDma(void) {
-	/* Abort any ongoing DMA transfers */
-	__HAL_RCC_SPI1_FORCE_RESET();
-	__HAL_RCC_SPI1_RELEASE_RESET();
-
-	/* Reset DMA flags */
-	dma_tx_done = 0;
-	dma_rx_done = 0;
-	/* Mark card as not initialized - requires re-initialization after error */
-	Stat = STA_NOINIT;
-
-	/* Small delay to ensure hardware is stable */
-	HAL_Delay(1);
-	HAL_SPI_Init(&SD_SPI_HANDLE);
-}
-
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
 	if (hspi == &SD_SPI_HANDLE)
 		dma_tx_done = 1;
@@ -96,6 +78,26 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
 	}
 }
 #endif
+
+/* Reset SPI peripherals after error to recover from hung state */
+static void SD_ResetSpiDma(void) {
+	/* Abort any ongoing DMA transfers */
+	__HAL_RCC_SPI1_FORCE_RESET();
+	__HAL_RCC_SPI1_RELEASE_RESET();
+
+#if USE_DMA
+	/* Reset DMA flags */
+	dma_tx_done = 0;
+	dma_rx_done = 0;
+#endif
+
+	/* Mark card as not initialized - requires re-initialization after error */
+	Stat = STA_NOINIT;
+
+	/* Small delay to ensure hardware is stable */
+	HAL_Delay(1);
+	HAL_SPI_Init(&SD_SPI_HANDLE);
+}
 
 static void SD_TransmitByte(uint8_t data) {
 	HAL_SPI_Transmit(&SD_SPI_HANDLE, &data, 1, HAL_MAX_DELAY);
@@ -559,10 +561,7 @@ inline DSTATUS SD_status(BYTE drv) {
 		return RES_NOTRDY;
 
 	SD_CS_LOW();
-
-	// czekaj aż karta gotowa
-	while (SD_ReceiveByte() != 0xFF)
-		;
+	while (SD_ReceiveByte() != 0xFF);
 
 	r1 = SD_SendCommand(CMD13, 0, 0x01);
 
@@ -582,16 +581,3 @@ inline DSTATUS SD_status(BYTE drv) {
 
 	return res;
 }
-
-/* USER_Driver structure - directly exposes SD functions to FatFS */
-Diskio_drvTypeDef USER_Driver = {
-		SD_SPI_Init,
-		SD_status,
-		SD_ReadBlocks,
-#if _USE_WRITE == 1
-		SD_WriteBlocks,
-#endif
-#if _USE_IOCTL == 1
-		SD_ioctl,
-#endif
-		};

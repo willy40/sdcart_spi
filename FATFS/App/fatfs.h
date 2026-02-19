@@ -24,8 +24,7 @@
 #endif
 
 #include "ff.h"
-#include "ff_gen_drv.h"
-#include "sd_spi.h" /* defines USER_Driver as external */
+#include "sd_spi.h"
 
 /* USER CODE BEGIN Includes */
 
