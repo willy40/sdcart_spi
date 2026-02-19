@@ -28,7 +28,7 @@ DSTATUS disk_status(BYTE pdrv /* Physical drive number to identify the drive */
 ) {
 	DSTATUS stat = SD_status(pdrv);
 
-	is_initialized = stat != RES_OK;
+	is_initialized = (stat == RES_OK);
 	return stat;
 }
 
