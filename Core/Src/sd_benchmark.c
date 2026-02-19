@@ -39,6 +39,8 @@ static uint8_t buffer[32768] __attribute__((aligned(4)));
 #else
 #define MODE_STR "Polling"
 #endif
+uint32_t write_time=0;
+uint32_t read_time=0;
 
 uint32_t sd_benchmark_write(const char *filename, uint32_t size_bytes) {
     FIL file;
@@ -102,11 +104,11 @@ uint32_t sd_benchmark_read(const char *filename, uint32_t size_bytes) {
 void sd_benchmark(void) {
     if (f_mount(&USERFatFS, "", 1)==FR_OK) {
         printf("Starting Benchmark Test\r\n");
-        uint32_t w = sd_benchmark_write("bench.bin", TEST_SIZE);
-        uint32_t r = sd_benchmark_read("bench.bin", TEST_SIZE);
+        write_time = (TEST_SIZE / 1024 * 1000) / sd_benchmark_write("bench.bin", TEST_SIZE);
+        read_time = (TEST_SIZE / 1024 * 1000) / sd_benchmark_read("bench.bin", TEST_SIZE);
 
-        if (w > 0) printf("Write speed: %lu KB/s\r\n", (TEST_SIZE / 1024 * 1000) / w);
-        if (r > 0) printf("Read  speed: %lu KB/s\r\n", (TEST_SIZE / 1024 * 1000) / r);
+        if (write_time > 0) printf("Write speed: %lu KB/s\r\n", write_time);
+        if (read_time > 0) printf("Read  speed: %lu KB/s\r\n", read_time);
 
         f_mount(NULL, "", 0);
     }
