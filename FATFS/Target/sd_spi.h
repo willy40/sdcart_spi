@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include "integer.h"
 #include "diskio.h"
+#include "ff_gen_drv.h"
 
 #define CMD0  	(0)
 #define CMD8  	(8)
@@ -53,6 +54,9 @@ DRESULT SD_ReadBlocks(BYTE pdrv, uint8_t *buff, uint32_t sector, uint32_t count)
 DRESULT SD_WriteBlocks(BYTE pdrv, const uint8_t *buff, uint32_t sector, uint32_t count);
 DRESULT SD_ioctl(BYTE drv, BYTE cmd, void *buff);
 DSTATUS SD_status (BYTE drv);
+
+/* USER_Driver exposes SD functions directly to FatFS without intermediate wrapper */
+extern Diskio_drvTypeDef USER_Driver;
 
 //DSTATUS USER_Read_Spi(BYTE drv, uint8_t *buff, uint32_t sector, uint32_t count);
 //DSTATUS USER_Write_Spi(BYTE drv, const uint8_t *buff, uint32_t sector, uint32_t count);
