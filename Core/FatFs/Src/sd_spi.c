@@ -80,9 +80,22 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
 
 /* Reset SPI peripherals after error to recover from hung state */
 static void SD_ResetSpiDma(void) {
-	/* Abort any ongoing DMA transfers */
+	/* Abort any ongoing SPI/DMA transfers before resetting peripherals */
+	HAL_SPI_Abort(&SD_SPI_HANDLE);
+
+#if USE_DMA
+	/* DeInit DMA streams to fully reset their state */
+	HAL_DMA_DeInit(SD_SPI_HANDLE.hdmarx);
+	HAL_DMA_DeInit(SD_SPI_HANDLE.hdmatx);
+#endif
+
+	/* Reset SPI peripheral hardware via RCC */
 	__HAL_RCC_SPI1_FORCE_RESET();
 	__HAL_RCC_SPI1_RELEASE_RESET();
+
+	/* Reset HAL handle state so HAL_SPI_Init calls HAL_SPI_MspInit
+	 * to fully reinitialize SPI and DMA peripherals */
+	SD_SPI_HANDLE.State = HAL_SPI_STATE_RESET;
 
 #if USE_DMA
 	/* Reset DMA flags */
@@ -95,12 +108,9 @@ static void SD_ResetSpiDma(void) {
 
 	/* Small delay to ensure hardware is stable */
 	HAL_Delay(1);
-	HAL_SPI_Init(&SD_SPI_HANDLE);
 
-#if USE_DMA
-	HAL_DMA_Init(SD_SPI_HANDLE.hdmarx);
-	HAL_DMA_Init(SD_SPI_HANDLE.hdmatx);
-#endif
+	/* Reinitialize SPI (HAL_SPI_MspInit reinitializes DMA and links it) */
+	HAL_SPI_Init(&SD_SPI_HANDLE);
 }
 
 static void SD_TransmitByte(uint8_t data) {
