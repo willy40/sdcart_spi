@@ -96,6 +96,11 @@ static void SD_ResetSpiDma(void) {
 	/* Small delay to ensure hardware is stable */
 	HAL_Delay(1);
 	HAL_SPI_Init(&SD_SPI_HANDLE);
+
+#if USE_DMA
+	HAL_DMA_Init(SD_SPI_HANDLE.hdmarx);
+	HAL_DMA_Init(SD_SPI_HANDLE.hdmatx);
+#endif
 }
 
 static void SD_TransmitByte(uint8_t data) {
