@@ -17,7 +17,6 @@
 #include "main.h"
 #include <string.h>
 #include <stdio.h>
-#include "diskio.h"
 
 /***************************************************************
  * 🔧 USER-MODIFIABLE SECTION
@@ -97,6 +96,11 @@ static void SD_ResetSpiDma(void) {
 	/* Small delay to ensure hardware is stable */
 	HAL_Delay(1);
 	HAL_SPI_Init(&SD_SPI_HANDLE);
+
+#if USE_DMA
+	HAL_DMA_Init(SD_SPI_HANDLE.hdmarx);
+	HAL_DMA_Init(SD_SPI_HANDLE.hdmatx);
+#endif
 }
 
 static void SD_TransmitByte(uint8_t data) {
@@ -273,7 +277,7 @@ DRESULT SD_SPI_Init(BYTE pdrv) {
 	return RES_OK;
 }
 
-DRESULT SD_WriteBlocks(BYTE pdrv, const BYTE *buff, DWORD sector, UINT count) {
+DRESULT SD_WriteBlocks(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count) {
 	if (!count)
 		return RES_ERROR;
 	if (Stat)
@@ -341,7 +345,7 @@ DRESULT SD_WriteBlocks(BYTE pdrv, const BYTE *buff, DWORD sector, UINT count) {
 	return RES_OK;
 }
 
-DRESULT SD_ReadBlocks(BYTE pdrv, BYTE *buff, DWORD sector, UINT count) {
+DRESULT SD_ReadBlocks(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
 	if (!count)
 		return RES_ERROR;
 	if (Stat)
