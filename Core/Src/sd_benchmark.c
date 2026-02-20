@@ -72,7 +72,6 @@ uint32_t sd_benchmark_write(const char *filename, uint32_t size_bytes) {
 
 	f_close(&file);
 	uint32_t elapsed = HAL_GetTick() - start;
-	printf("[%s] Write %lu bytes in %lu ms\r\n", MODE_STR, size_bytes, elapsed);
 	return elapsed;
 }
 
@@ -101,7 +100,6 @@ uint32_t sd_benchmark_read(const char *filename, uint32_t size_bytes) {
 
 	f_close(&file);
 	uint32_t elapsed = HAL_GetTick() - start;
-	printf("[%s] Read %lu bytes in %lu ms\r\n", MODE_STR, size_bytes, elapsed);
 	return elapsed;
 }
 
