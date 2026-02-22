@@ -31,7 +31,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "spi.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -62,8 +62,6 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 #define SD_SPI_HANDLE hspi1
-#define CS_Pin GPIO_PIN_12
-#define CS_GPIO_Port GPIOB
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -40,7 +40,7 @@ DSTATUS disk_status(BYTE pdrv /* Physical drive number to identify the drive */
 DSTATUS disk_initialize(BYTE pdrv /* Physical drive nmuber to identify the drive */
 ) {
 	DSTATUS stat = SD_status(pdrv);
-	if (is_initialized == 0 || stat != RES_OK) {
+	if (!is_initialized || stat != RES_OK) {
 		stat = SD_SPI_Init(pdrv);
 		is_initialized = stat == RES_OK;
 	}

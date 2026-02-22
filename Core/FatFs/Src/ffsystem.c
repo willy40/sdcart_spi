@@ -4,7 +4,6 @@
 
 #include "ff.h"
 
-
 #if FF_USE_LFN == 3	/* Use dynamic memory allocation */
 
 /*------------------------------------------------------------------------*/
@@ -19,6 +18,7 @@ void* ff_memalloc (	/* Returns pointer to the allocated memory block (null if no
 )
 {
 	return malloc((size_t)msize);	/* Allocate a new memory block */
+	//return aligned_alloc(32, msize);
 }
 
 
@@ -30,9 +30,6 @@ void ff_memfree (
 }
 
 #endif
-
-
-
 
 #if FF_FS_REENTRANT	/* Mutal exclusion */
 /*------------------------------------------------------------------------*/

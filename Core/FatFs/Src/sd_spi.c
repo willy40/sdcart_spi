@@ -25,11 +25,8 @@
 
 #define USE_DMA 1
 
-extern SPI_HandleTypeDef hspi1;
-#define SD_SPI_HANDLE hspi1
-
-#define SD_CS_LOW()     HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET)
-#define SD_CS_HIGH()    HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET)
+#define SD_CS_LOW()     HAL_GPIO_WritePin(SD_CS_GPIO_Port, SD_CS_Pin, GPIO_PIN_RESET)
+#define SD_CS_HIGH()    HAL_GPIO_WritePin(SD_CS_GPIO_Port, SD_CS_Pin, GPIO_PIN_SET)
 
 /***************************************************************
  * 🚫 DO NOT MODIFY BELOW THIS LINE

@@ -72,7 +72,6 @@ uint32_t sd_benchmark_write(const char *filename, uint32_t size_bytes) {
 
 	f_close(&file);
 	uint32_t elapsed = HAL_GetTick() - start;
-	printf("[%s] Write %lu bytes in %lu ms\r\n", MODE_STR, size_bytes, elapsed);
 	return elapsed;
 }
 
@@ -101,23 +100,26 @@ uint32_t sd_benchmark_read(const char *filename, uint32_t size_bytes) {
 
 	f_close(&file);
 	uint32_t elapsed = HAL_GetTick() - start;
-	printf("[%s] Read %lu bytes in %lu ms\r\n", MODE_STR, size_bytes, elapsed);
 	return elapsed;
 }
 
 void sd_benchmark(void) {
+	uint32_t start = HAL_GetTick();
 	if (f_mount(&USERFatFS, "", 1) == FR_OK) {
-		printf("Starting Benchmark Test\r\n");
+		printf("\r\nStarting Benchmark Test\r\n");
 		uint32_t w = sd_benchmark_write("bench.bin", TEST_SIZE);
 		uint32_t r = sd_benchmark_read("bench.bin", TEST_SIZE);
 
 		write_time = w != 0 ? (TEST_SIZE / 1024 * 1000) / w : 0;
 		read_time = r != 0 ? (TEST_SIZE / 1024 * 1000) / r : 0;
 
-			printf("Write speed: %lu KB/s\r\n", write_time);
-			printf("Read  speed: %lu KB/s\r\n", read_time);
+		printf("Write speed: %lu KB/s\r\n", write_time);
+		printf("Read  speed: %lu KB/s\r\n", read_time);
 
 		f_mount(NULL, "", 0);
+
+		uint32_t elapsed = HAL_GetTick() - start;
+		printf("Overal Time: %lums\r\n", elapsed);
 	} else {
 		printf("Cart Error...\r\n");
 	}
